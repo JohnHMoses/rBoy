@@ -26,6 +26,20 @@ fn word_reference_can_read_value() {
     let mut lower: u8 = 0x34;
     let upper_ref = ByteReference::new(&mut upper);
     let lower_ref = ByteReference::new(&mut lower);
-    let word_ref = WordReference::new(lower_ref, upper_ref);
+    let word_ref = WordReference::new(Box::new(lower_ref), Box::new(upper_ref));
     assert_eq!(0x1234, word_ref.read16());
+}
+
+#[test]
+fn word_reference_can_write_value() {
+    let mut upper: u8 = 0x12;
+    let mut lower: u8 = 0x34;
+    {
+        let upper_ref = ByteReference::new(&mut upper);
+        let lower_ref = ByteReference::new(&mut lower);
+        let mut word_ref = WordReference::new(Box::new(lower_ref), Box::new(upper_ref));
+        word_ref.write16(0xABCD);
+    }
+    assert_eq!(0xAB, upper);
+    assert_eq!(0xCD, lower);
 }

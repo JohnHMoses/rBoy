@@ -30,25 +30,26 @@ impl<'a> ByteAddressable for ByteReference<'a> {
     }
 }
 
-struct WordReference<T: ByteAddressable, E: ByteAddressable> {
-    lower: T,
-    upper: E,
+struct WordReference<'a> {
+    lower: Box<ByteAddressable + 'a>,
+    upper: Box<ByteAddressable + 'a>,
 }
 
-impl<T: ByteAddressable, E: ByteAddressable> WordReference<T, E> {
-    fn new(lower: T, upper: E) -> WordReference<T, E> {
+impl<'a> WordReference<'a> {
+    fn new(lower: Box<ByteAddressable + 'a>, upper: Box<ByteAddressable + 'a>) -> WordReference<'a> {
         WordReference { lower, upper }
     }
 }
 
-impl<T: ByteAddressable, E: ByteAddressable> WordAddressable for WordReference<T, E> {
+impl<'a> WordAddressable for WordReference<'a> {
     fn read16(&self) -> u16 {
-        let low_byte = self.lower.read8() as u16;
-        let high_byte = (self.upper.read8() as u16) << 8;
+        let low_byte = (*self.lower).read8() as u16;
+        let high_byte = ((*self.upper).read8() as u16) << 8;
         return low_byte | high_byte;
     }
 
     fn write16(&mut self, value: u16) {
-        unimplemented!();
+        (*self.lower).write8(value as u8);
+        (*self.upper).write8((value >> 8) as u8);
     }
 }
