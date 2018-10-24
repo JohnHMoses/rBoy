@@ -1,5 +1,6 @@
 use super::ByteAddressable;
 use super::ByteReference;
+use super::Memory;
 use super::WordAddressable;
 use super::WordReference;
 
@@ -42,4 +43,33 @@ fn word_reference_can_write_value() {
     }
     assert_eq!(0xAB, upper);
     assert_eq!(0xCD, lower);
+}
+
+#[test]
+fn memory_can_make_read_write_references() {
+    let mut memory = Memory::new();
+    {
+        let mut test_ref = memory.get_ref(0x0000);
+        assert_eq!(0x00, test_ref.read8());
+        assert_eq!(0x0000, test_ref.read16());
+
+        test_ref.write16(0x1234);
+
+        assert_eq!(0x34, test_ref.read8());
+        assert_eq!(0x1234, test_ref.read16());
+    }
+}
+
+#[test]
+fn memory_refs_can_overlap() {
+    let mut memory = Memory::new();
+    {
+        let mut test_ref = memory.get_ref(0x0000);
+        test_ref.write16(0x1234);
+    }
+    {
+        let overlapping_ref = memory.get_ref(0x0001);
+        assert_eq!(0x12, overlapping_ref.read8());
+        assert_eq!(0x0012, overlapping_ref.read16());
+    }
 }

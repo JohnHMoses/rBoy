@@ -6,6 +6,9 @@ pub trait ByteAddressable {
 }
 
 pub trait WordAddressable {
+    fn read8(&self) -> u8;
+    fn write8(&mut self, value: u8);
+
     fn read16(&self) -> u16;
     fn write16(&mut self, value: u16);
 }
@@ -42,6 +45,14 @@ impl<'a> WordReference<'a> {
 }
 
 impl<'a> WordAddressable for WordReference<'a> {
+    fn read8(&self) -> u8 {
+        return (*self.lower).read8();
+    }
+
+    fn write8(&mut self, value: u8) {
+        (*self.lower).write8(value);
+    }
+
     fn read16(&self) -> u16 {
         let low_byte = (*self.lower).read8() as u16;
         let high_byte = ((*self.upper).read8() as u16) << 8;
@@ -55,17 +66,17 @@ impl<'a> WordAddressable for WordReference<'a> {
 }
 
 struct Memory {
-    mem: [u8; 0x100],
+    mem: [u8; 0x10000],
 }
 
 impl<'a> Memory {
     pub fn new() -> Memory {
-        Memory { mem: [0; 0x100] }
+        Memory { mem: [0; 0x10000] }
     }
 
     pub fn get_ref(&'a mut self, address: u16) -> WordReference {
         let real_address = address as usize;
-        assert!(real_address != 0xFF); // TODO: handle later
+        assert!(real_address != 0xFFFF); // TODO: handle later
         let (low_ref, high_ref) = self.get_byte_refs(real_address);
         return WordReference::new(low_ref, high_ref);
     }
@@ -74,7 +85,10 @@ impl<'a> Memory {
         assert!(address < self.mem.len());
         // Use some magic to grab two mutables references to the same slice
         let s: &'a mut[u8] = &mut self.mem;
-        let (low, high) = s.split_at_mut(address);
+        // Divide the slice into two mutable subslices
+        // with the lower byte as the last elm of the first
+        // and with the upper byte as the first elm of the second
+        let (low, high) = s.split_at_mut(address + 1);
         let lower = low.last_mut().unwrap();
         let upper = high.first_mut().unwrap();
         return (Box::new(ByteReference::new(lower)), Box::new(ByteReference::new(upper)));
