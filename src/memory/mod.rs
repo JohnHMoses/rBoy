@@ -53,3 +53,30 @@ impl<'a> WordAddressable for WordReference<'a> {
         (*self.upper).write8((value >> 8) as u8);
     }
 }
+
+struct Memory {
+    mem: [u8; 0x100],
+}
+
+impl<'a> Memory {
+    pub fn new() -> Memory {
+        Memory { mem: [0; 0x100] }
+    }
+
+    pub fn get_ref(&'a mut self, address: u16) -> WordReference {
+        let real_address = address as usize;
+        assert!(real_address != 0xFF); // TODO: handle later
+        let (low_ref, high_ref) = self.get_byte_refs(real_address);
+        return WordReference::new(low_ref, high_ref);
+    }
+
+    fn get_byte_refs(&'a mut self, address: usize) -> (Box<ByteAddressable + 'a>, Box<ByteAddressable + 'a>) {
+        assert!(address < self.mem.len());
+        // Use some magic to grab two mutables references to the same slice
+        let s: &'a mut[u8] = &mut self.mem;
+        let (low, high) = s.split_at_mut(address);
+        let lower = low.last_mut().unwrap();
+        let upper = high.first_mut().unwrap();
+        return (Box::new(ByteReference::new(lower)), Box::new(ByteReference::new(upper)));
+    }
+}
