@@ -1,0 +1,6 @@
+[package]
+name = "rboy"
+version = "0.1.0"
+authors = ["John Moses <john.moses445@gmail.com>"]
+
+[dependencies]
